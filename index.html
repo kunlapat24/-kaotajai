@@ -44,6 +44,17 @@
     .file-label { display:block; padding:14px; border:2px dashed #81c784; border-radius:12px; color:#2e7d32;
       background:rgba(255,255,255,.4); cursor:pointer; font-weight:600; }
     input[type=file] { display:none; }
+    .goal-box { text-align:left; background:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.8);
+      border-radius:14px; padding:12px 14px; margin-bottom:15px; }
+    .goal-box .goal-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+    .goal-box .goal-label { font-size:.85rem; color:#1b5e20; font-weight:600; }
+    .goal-box .goal-edit { font-size:.78rem; color:#2e7d32; background:none; border:none; cursor:pointer;
+      text-decoration:underline; font-family:'Sarabun',sans-serif; }
+    .goal-box .goal-track { height:14px; border-radius:10px; background:rgba(46,125,50,.10);
+      border:1px solid rgba(46,125,50,.12); overflow:hidden; }
+    .goal-box .goal-fill { height:100%; border-radius:10px; min-width:6px;
+      background:linear-gradient(90deg,#a5d6a7,#43a047); transition:width .8s ease; }
+    .goal-box .goal-pct { font-size:.78rem; color:#2e7d32; margin-top:4px; text-align:right; }
   </style>
 </head>
 <body>
@@ -140,6 +151,8 @@
               <option value="สาธารณสุขอำเภอบ้านนา">สาธารณสุขอำเภอบ้านนา (สสอ.)</option>
             </select>
           </div>
+          <div class="form-group"><label>เป้าหมายก้าวต่อวัน (ไม่กรอก = 8,000)</label>
+            <input type="number" id="goal" min="1" placeholder="8000"></div>
           <button type="submit" id="btnReg" class="btn-submit">ยืนยันการลงทะเบียน</button>
         </form>`;
       document.getElementById("regForm").addEventListener("submit", doRegister);
@@ -157,7 +170,8 @@
           weight: document.getElementById("weight").value,
           height: document.getElementById("height").value,
           bmi: document.getElementById("bmi").value,
-          workplace: document.getElementById("workplace").value
+          workplace: document.getElementById("workplace").value,
+          goal: document.getElementById("goal").value
         });
         if (!r.ok) throw new Error(r.message || "บันทึกไม่สำเร็จ");
         const st = await api("getStatus"); renderSteps(st);
@@ -179,12 +193,39 @@
       return `<div style="margin-bottom:12px;"><span class="badge ${cls}">${label}: ${Number(sub.steps).toLocaleString()} ก้าว — ${sub.status}</span>${hint ? `<div style="font-size:.8rem;color:#c62828;margin-top:4px;">${hint}</div>` : ""}</div>`;
     }
 
+    function goalBarHtml(st) {
+      const goal = (st.profile.goal > 0) ? st.profile.goal : 8000;
+      const todaySteps = (st.todaySubmission && st.todaySubmission.status !== "ไม่อนุมัติ") ? Number(st.todaySubmission.steps) : 0;
+      const pct = Math.min(100, Math.round((todaySteps / goal) * 100));
+      return `<div class="goal-box">
+        <div class="goal-top">
+          <span class="goal-label">🎯 เป้าวันนี้ ${fmtN(goal)} ก้าว</span>
+          <button type="button" class="goal-edit" onclick="editGoal(${goal})">แก้ไข</button>
+        </div>
+        <div class="goal-track"><div class="goal-fill" style="width:${pct}%"></div></div>
+        <div class="goal-pct">${fmtN(todaySteps)} / ${fmtN(goal)} ก้าว (${pct}%)</div>
+      </div>`;
+    }
+    function fmtN(n) { return Number(n || 0).toLocaleString(); }
+    async function editGoal(current) {
+      const val = prompt("ตั้งเป้าหมายก้าวต่อวัน (ตัวเลข):", current);
+      if (val === null) return;
+      const goal = parseInt(val, 10);
+      if (!(goal > 0)) { alert("กรุณาระบุตัวเลขมากกว่า 0"); return; }
+      try {
+        const r = await api("setGoal", { goal });
+        if (!r.ok) throw new Error(r.message);
+        const st = await api("getStatus"); renderSteps(st);
+      } catch (err) { alert("แก้ไขไม่สำเร็จ: " + err.message); }
+    }
+
     function renderSteps(st) {
       const adminBtn = st.isAdmin ? `<a href="https://liff.line.me/${LIFF_ID}/admin.html"><button type="button" class="btn-ghost">🛡️ ไปหน้าแอดมิน</button></a>` : "";
       document.getElementById("cardContent").innerHTML = `
         <img src="${profile.pictureUrl}" class="profile-img">
         <h3>ส่งผลก้าว</h3>
         <p class="status-text">สวัสดีคุณ <strong>${st.profile.displayName}</strong><br>${st.profile.workplace || ""}</p>
+        ${goalBarHtml(st)}
         <div id="dateBanner">${statusBadge(st.todaySubmission, "วันนี้")}</div>
         <form id="stepForm">
           <div class="form-group"><label>วันที่เดิน</label>
@@ -193,11 +234,13 @@
             <input type="number" id="steps" min="1" placeholder="เช่น 8500" required></div>
           <div class="form-group"><label>รูปหลักฐาน (แคปจากแอปนับก้าว)</label>
             <label class="file-label" for="photo">📷 แตะเพื่อเลือก/ถ่ายรูป</label>
-            <input type="file" id="photo" accept="image/*" capture="environment" required onchange="previewPhoto()">
+            <input type="file" id="photo" accept="image/*" required onchange="previewPhoto()">
             <img id="preview" class="preview"></div>
           <button type="submit" id="btnStep" class="btn-submit">ส่งผลก้าว</button>
         </form>
         <a href="https://liff.line.me/${LIFF_ID}/leaderboard.html"><button type="button" class="btn-ghost">🏆 ดู Leaderboard</button></a>
+        <a href="https://liff.line.me/${LIFF_ID}/history.html"><button type="button" class="btn-ghost">📅 ประวัติของฉัน</button></a>
+        <a href="https://liff.line.me/${LIFF_ID}/badges.html"><button type="button" class="btn-ghost">🎖️ เหรียญของฉัน</button></a>
         ${adminBtn}`;
       document.getElementById("stepForm").addEventListener("submit", doSubmitSteps);
       document.getElementById("walkDate").addEventListener("change", onDateChange);
