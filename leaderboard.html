@@ -57,20 +57,26 @@
       box-shadow: 0 4px 14px rgba(46,125,50,.35); }
 
     /* ---------- Top 5 podium ---------- */
-    .top5 { display:flex; align-items:flex-end; gap:6px; margin-bottom:18px; padding:18px 6px 14px;
-      overflow-x:auto; }
-    .top5 .slot { flex:1; min-width:62px; text-align:center; }
-    .top5 .avatarWrap { position:relative; display:inline-block; }
-    .top5 .avatar { width:54px; height:54px; border-radius:50%; object-fit:cover;
-      border:3px solid #fff; background:#e8f5e9; box-shadow:0 6px 14px rgba(0,0,0,.15); }
-    .top5 .slot.pos1 .avatar { width:76px; height:76px; border-color:#ffd54f; box-shadow:0 8px 20px rgba(255,193,7,.4); }
-    .top5 .slot.pos2 .avatar { border-color:#cfd8dc; }
-    .top5 .slot.pos3 .avatar { border-color:#ffab91; }
-    .top5 .medalIcon { position:absolute; bottom:-4px; right:-2px; font-size:1.1rem; }
-    .top5 .rankno { font-weight:700; color:#1b5e20; margin-top:6px; font-size:.78rem; }
-    .top5 .pname { font-size:.74rem; color:#2e7d32; white-space:nowrap; overflow:hidden;
-      text-overflow:ellipsis; max-width:78px; margin:1px auto 0; }
-    .top5 .psteps { font-size:.78rem; font-weight:700; color:#1b5e20; }
+    .chart { padding:18px 16px 8px; }
+    .chart .bar-row { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+    .chart .bar-row:last-child { margin-bottom:4px; }
+    .chart .rk { width:22px; flex:none; font-weight:700; color:#1b5e20; font-size:.85rem; text-align:center; }
+    .chart .av { width:38px; height:38px; border-radius:50%; object-fit:cover; flex:none;
+      border:2px solid #fff; box-shadow:0 3px 8px rgba(0,0,0,.15); background:#e8f5e9; }
+    .chart .av.rk1 { width:46px; height:46px; border-color:#ffd54f; }
+    .chart .bar-main { flex:1; min-width:0; }
+    .chart .bar-top { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+    .chart .bar-name { font-size:.82rem; font-weight:600; color:#1b5e20; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:62%; }
+    .chart .bar-val { font-size:.82rem; font-weight:700; color:#2e7d32; white-space:nowrap; }
+    .chart .bar-track { height:14px; border-radius:10px; background:rgba(46,125,50,.10);
+      border:1px solid rgba(46,125,50,.12); overflow:hidden; }
+    .chart .bar-fill { height:100%; border-radius:10px; min-width:10px;
+      background: linear-gradient(90deg, #a5d6a7, #43a047);
+      box-shadow: inset 0 1px 2px rgba(255,255,255,.4);
+      transition: width 1s cubic-bezier(.22,.9,.25,1); width:0%; }
+    .chart .bar-row.rk0 .bar-fill { background: linear-gradient(90deg, #ffe082, #ffb300); }
+    .chart .bar-row.rk1 .bar-fill { background: linear-gradient(90deg, #cfd8dc, #90a4ae); }
+    .chart .bar-row.rk2 .bar-fill { background: linear-gradient(90deg, #ffccbc, #ff8a65); }
 
     /* ---------- รายการ ---------- */
     .row { display:flex; align-items:center; gap:10px; padding:11px 14px; margin-bottom:9px; }
@@ -165,14 +171,16 @@
       if (tab === "individuals") {
         const arr = data.individuals || [];
         const top = arr.slice(0, 5);
-        // จัดให้อันดับ 1 อยู่กลางแบบโพเดียม: 3-1-2-4-5
-        const order = top.length >= 3 ? [2, 0, 1, 3, 4].filter(i => i < top.length) : top.map((_, i) => i);
-        top5 = top.length ? `<div class="glass top5">${order.map(i => {
-          const it = top[i];
-          return `<div class="slot pos${i+1}">
-              <div class="avatarWrap">${avatarOf(it, "avatar")}<span class="medalIcon">${medalIcon(i)}</span></div>
-              <div class="rankno">#${i+1}</div>
-              <div class="pname">${it.name}</div><div class="psteps">${fmt(it.total)}</div>
+        const maxVal = top.length ? top[0].total : 1; // อันดับ 1 = 100% เทียบสัดส่วนกับคนอื่น
+        top5 = top.length ? `<div class="glass chart">${top.map((it, i) => {
+          const pct = Math.max(6, Math.round((it.total / maxVal) * 100)); // ขั้นต่ำ 6% ให้เห็นแท่ง
+          return `<div class="bar-row rk${i}">
+              <div class="rk">${i + 1}</div>
+              ${avatarOf(it, "av" + (i === 0 ? " rk1" : ""))}
+              <div class="bar-main">
+                <div class="bar-top"><span class="bar-name">${it.name}</span><span class="bar-val">${fmt(it.total)} ก้าว</span></div>
+                <div class="bar-track"><div class="bar-fill" data-pct="${pct}" style="width:0%"></div></div>
+              </div>
             </div>`;
         }).join("")}</div>` : "";
 
@@ -197,13 +205,18 @@
       app.innerHTML = `
         <div class="glass head"><h2>🏆 Leaderboard</h2><div class="sub">ก้าวท้าใจ สสอ.บ้านนา</div></div>
         ${meCard}
+        ${top5}
         <div class="tabs">
           <button class="tab ${tab === "individuals" ? "active" : ""}" onclick="switchTab('individuals')">รายบุคคล</button>
           <button class="tab ${tab === "teams" ? "active" : ""}" onclick="switchTab('teams')">หน่วยงาน</button>
         </div>
-        ${top5}
         ${list}
         ${backBtn()}`;
+
+      // อนิเมชันแท่งกราฟ: ตั้ง width จริงหลัง paint รอบแรก ให้เห็นแท่งวิ่งขึ้น
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        document.querySelectorAll(".bar-fill").forEach(el => { el.style.width = el.dataset.pct + "%"; });
+      }));
     }
 
     function switchTab(t) { tab = t; render(); }
