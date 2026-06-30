@@ -62,9 +62,10 @@
 
     let profile = null, accessToken = "";
 
-    async function api(action, payload) {
+    async function api(action, payload, _isRetry) {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 20000); // กันค้างตลอดกาล: ยกเลิกถ้าเกิน 20 วิ
+      const timeoutMs = _isRetry ? 25000 : 12000; // ครั้งแรกรอ 12 วิ ถ้าไม่ทันจะลองใหม่อัตโนมัติแบบรอนานขึ้น
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
       try {
         const res = await fetch(GAS_URL, {
           method: "POST",
@@ -80,7 +81,11 @@
           throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (ไม่ใช่ JSON) — ลองใหม่อีกครั้ง");
         }
       } catch (err) {
-        if (err.name === "AbortError") throw new Error("หมดเวลาเชื่อมต่อ กรุณาลองใหม่อีกครั้ง");
+        // รอบแรกหมดเวลา (มักเกิดจาก Apps Script ตื่นช้า) -> ลองอีกครั้งอัตโนมัติแบบรอนานขึ้น ก่อนจะแจ้ง error จริง
+        if (err.name === "AbortError" && !_isRetry) {
+          return api(action, payload, true);
+        }
+        if (err.name === "AbortError") throw new Error("เซิร์ฟเวอร์ตอบช้าผิดปกติ กรุณาลองใหม่อีกครั้งใน 1 นาที");
         throw err;
       } finally {
         clearTimeout(timer);

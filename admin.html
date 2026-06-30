@@ -47,9 +47,9 @@
 
     let accessToken = "";
 
-    async function api(action, payload) {
+    async function api(action, payload, _isRetry) {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 20000);
+      const timer = setTimeout(() => ctrl.abort(), _isRetry ? 25000 : 12000);
       try {
         const res = await fetch(GAS_URL, {
           method: "POST",
@@ -62,7 +62,8 @@
         try { return JSON.parse(text); }
         catch (e) { throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (ไม่ใช่ JSON)"); }
       } catch (err) {
-        if (err.name === "AbortError") throw new Error("หมดเวลาเชื่อมต่อ กรุณาลองใหม่อีกครั้ง");
+        if (err.name === "AbortError" && !_isRetry) return api(action, payload, true);
+        if (err.name === "AbortError") throw new Error("เซิร์ฟเวอร์ตอบช้าผิดปกติ กรุณาลองใหม่อีกครั้งใน 1 นาที");
         throw err;
       } finally { clearTimeout(timer); }
     }
