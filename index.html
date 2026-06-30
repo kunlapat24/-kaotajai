@@ -57,7 +57,7 @@
   <script>
     /* ====== ตั้งค่า 2 จุด ====== */
     const LIFF_ID = "2010554592-DhNLOLm1";
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbx8npNr9IfY4hwrf3WUAUiYZT2TkE8Bwp5CJclYMRJNe9HbEg7NCPfnLQjlBQTev0ehTA/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwpgOdF1RxQOCpzFUCiAKklZACeGrdIUsFwUZS7zOq3JmBxAgNSPEpwNLJLho2VFyfu2A/exec";
     /* ========================== */
 
     let profile = null, accessToken = "";
@@ -175,7 +175,7 @@
     }
 
     function renderSteps(st) {
-      const adminBtn = st.isAdmin ? `<a href="./admin.html"><button type="button" class="btn-ghost">🛡️ ไปหน้าแอดมิน</button></a>` : "";
+      const adminBtn = st.isAdmin ? `<a href="https://liff.line.me/${LIFF_ID}/admin.html"><button type="button" class="btn-ghost">🛡️ ไปหน้าแอดมิน</button></a>` : "";
       document.getElementById("cardContent").innerHTML = `
         <img src="${profile.pictureUrl}" class="profile-img">
         <h3>ส่งผลก้าว</h3>
@@ -192,7 +192,7 @@
             <img id="preview" class="preview"></div>
           <button type="submit" id="btnStep" class="btn-submit">ส่งผลก้าว</button>
         </form>
-        <a href="./leaderboard.html"><button type="button" class="btn-ghost">🏆 ดู Leaderboard</button></a>
+        <a href="https://liff.line.me/${LIFF_ID}/leaderboard.html"><button type="button" class="btn-ghost">🏆 ดู Leaderboard</button></a>
         ${adminBtn}`;
       document.getElementById("stepForm").addEventListener("submit", doSubmitSteps);
       document.getElementById("walkDate").addEventListener("change", onDateChange);

@@ -5,53 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Leaderboard — ก้าวท้าใจ สสอ.บ้านนา</title>
   <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    body { margin:0; padding:0 0 40px; font-family:'Sarabun',sans-serif;
-      background:linear-gradient(135deg,#e8f5e9 0%,#81c784 100%); min-height:100vh; }
-    .wrap { width:95%; max-width:440px; margin:0 auto; padding-top:18px; }
-    .head { background:rgba(255,255,255,.55); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,.6);
-      border-radius:16px; padding:16px; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,.08); margin-bottom:14px; }
-    .head h2 { color:#1b5e20; margin:0; font-size:1.3rem; }
-    .me { background:linear-gradient(135deg,#66bb6a,#43a047); color:#fff; border-radius:16px; padding:14px;
-      text-align:center; margin-bottom:14px; box-shadow:0 6px 18px rgba(76,175,80,.3); }
-    .me .rank { font-size:1.8rem; font-weight:bold; } .me .sub { font-size:.85rem; opacity:.95; }
-    .tabs { display:flex; gap:8px; margin-bottom:14px; }
-    .tab { flex:1; padding:10px; border-radius:12px; border:1px solid #81c784; background:rgba(255,255,255,.5);
-      color:#1b5e20; font-weight:600; font-family:'Sarabun',sans-serif; cursor:pointer; font-size:.95rem; }
-    .tab.active { background:linear-gradient(135deg,#66bb6a,#43a047); color:#fff; border-color:transparent; }
-    .row { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.6); backdrop-filter:blur(10px);
-      border:1px solid rgba(255,255,255,.7); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
-    .row.mine { outline:2px solid #43a047; }
-    .pos { width:34px; height:34px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center;
-      font-weight:bold; background:#e8f5e9; color:#2e7d32; }
-    .pos.g1 { background:#ffd54f; color:#7a5c00; } .pos.g2 { background:#cfd8dc; color:#37474f; } .pos.g3 { background:#ffcc80; color:#7a4a00; }
+    * { box-sizing: border-box; }
+    body {
+      margin:0; padding:0 0 50px; font-family:'Sarabun',sans-serif;
+      background: radial-gradient(circle at 20% 0%, #c8f5cf 0%, #e8f5e9 35%, #ffffff 100%);
+      min-height:100vh; color:#1b3a1f;
+    }
+    .wrap { width:94%; max-width:440px; margin:0 auto; padding-top:18px; }
+
+    /* ---------- Liquid Glass base ---------- */
+    .glass {
+      background: rgba(255,255,255,.55);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      border: 1px solid rgba(255,255,255,.9);
+      box-shadow: 0 8px 28px rgba(46,125,50,.10), inset 0 1px 0 rgba(255,255,255,.6);
+      border-radius: 22px;
+    }
+
+    .head { text-align:center; padding:18px 16px; margin-bottom:14px; }
+    .head h2 { margin:0; font-size:1.35rem; font-weight:700; color:#1b5e20; letter-spacing:.2px; }
+    .head .sub { font-size:.8rem; color:#3a7d44; margin-top:4px; }
+
+    /* ---------- การ์ดของฉัน ---------- */
+    .me {
+      position: relative; overflow:hidden;
+      padding:18px; margin-bottom:16px; text-align:center;
+      background: linear-gradient(135deg, rgba(102,187,106,.92), rgba(46,125,50,.92));
+      border: 1px solid rgba(255,255,255,.55);
+      box-shadow: 0 10px 30px rgba(46,125,50,.28), inset 0 1px 0 rgba(255,255,255,.4);
+      border-radius: 22px; color:#fff;
+    }
+    .me::after {
+      content:""; position:absolute; inset:0;
+      background: radial-gradient(circle at 80% -10%, rgba(255,255,255,.35), transparent 60%);
+    }
+    .me .rankNum { font-size:2.1rem; font-weight:700; line-height:1; }
+    .me .rankLbl { font-size:.78rem; opacity:.9; margin-top:2px; }
+    .me .name { font-weight:600; margin-top:8px; font-size:1rem; }
+    .me .total { font-size:.85rem; opacity:.95; margin-top:2px; }
+
+    /* ---------- แท็บ ---------- */
+    .tabs { display:flex; gap:8px; margin-bottom:16px; padding:5px; border-radius:18px;
+      background: rgba(255,255,255,.45); border:1px solid rgba(255,255,255,.8); }
+    .tab { flex:1; padding:10px; border-radius:14px; border:none; background:transparent;
+      color:#2e7d32; font-weight:600; font-family:'Sarabun',sans-serif; cursor:pointer; font-size:.92rem;
+      transition: all .25s; }
+    .tab.active { background: linear-gradient(135deg,#66bb6a,#2e7d32); color:#fff;
+      box-shadow: 0 4px 14px rgba(46,125,50,.35); }
+
+    /* ---------- Top 5 podium ---------- */
+    .top5 { display:flex; align-items:flex-end; gap:6px; margin-bottom:18px; padding:18px 6px 14px;
+      overflow-x:auto; }
+    .top5 .slot { flex:1; min-width:62px; text-align:center; }
+    .top5 .avatarWrap { position:relative; display:inline-block; }
+    .top5 .avatar { width:54px; height:54px; border-radius:50%; object-fit:cover;
+      border:3px solid #fff; background:#e8f5e9; box-shadow:0 6px 14px rgba(0,0,0,.15); }
+    .top5 .slot.pos1 .avatar { width:76px; height:76px; border-color:#ffd54f; box-shadow:0 8px 20px rgba(255,193,7,.4); }
+    .top5 .slot.pos2 .avatar { border-color:#cfd8dc; }
+    .top5 .slot.pos3 .avatar { border-color:#ffab91; }
+    .top5 .medalIcon { position:absolute; bottom:-4px; right:-2px; font-size:1.1rem; }
+    .top5 .rankno { font-weight:700; color:#1b5e20; margin-top:6px; font-size:.78rem; }
+    .top5 .pname { font-size:.74rem; color:#2e7d32; white-space:nowrap; overflow:hidden;
+      text-overflow:ellipsis; max-width:78px; margin:1px auto 0; }
+    .top5 .psteps { font-size:.78rem; font-weight:700; color:#1b5e20; }
+
+    /* ---------- รายการ ---------- */
+    .row { display:flex; align-items:center; gap:10px; padding:11px 14px; margin-bottom:9px; }
+    .row.mine { background: linear-gradient(135deg, rgba(102,187,106,.22), rgba(255,255,255,.55));
+      border: 1.5px solid #43a047; }
+    .pos { width:30px; height:30px; flex:none; border-radius:50%; display:flex; align-items:center;
+      justify-content:center; font-weight:700; font-size:.85rem; background:#e8f5e9; color:#2e7d32; }
+    .pos.g1 { background:#ffd54f; color:#7a5c00; } .pos.g2 { background:#cfd8dc; color:#37474f; }
+    .pos.g3 { background:#ffcc80; color:#7a4a00; }
+    .rowAvatar { width:32px; height:32px; border-radius:50%; object-fit:cover; flex:none;
+      border:1px solid rgba(0,0,0,.06); background:#e8f5e9; }
     .info { flex:1; min-width:0; }
-    .info .nm { color:#1b5e20; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .info .meta { color:#777; font-size:.8rem; }
-    .total { color:#2e7d32; font-weight:bold; font-size:1.05rem; white-space:nowrap; }
-    .total span { font-size:.75rem; color:#888; font-weight:400; }
-    .msg { text-align:center; color:#1b5e20; font-weight:bold; padding:30px 10px; line-height:1.6; }
-    .back { width:100%; background:rgba(255,255,255,.6); color:#1b5e20; border:1px solid #81c784;
-      padding:12px; border-radius:12px; font-weight:600; font-family:'Sarabun',sans-serif; cursor:pointer; margin-top:6px; }
-    .top5 { display:flex; align-items:flex-end; gap:8px; margin-bottom:16px; padding:10px 4px; overflow-x:auto; }
-    .top5 .slot { flex:1; min-width:64px; text-align:center; }
-    .top5 .avatar { width:56px; height:56px; border-radius:50%; object-fit:cover; border:3px solid #fff;
-      box-shadow:0 4px 10px rgba(0,0,0,.15); background:#e8f5e9; }
-    .top5 .slot.r1 .avatar { width:74px; height:74px; border-color:#ffd54f; }
-    .top5 .slot.r2 .avatar { border-color:#cfd8dc; } .top5 .slot.r3 .avatar { border-color:#ffcc80; }
-    .top5 .rankno { font-weight:bold; color:#1b5e20; margin-top:4px; font-size:.85rem; }
-    .top5 .pname { font-size:.78rem; color:#2e7d32; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px; margin:0 auto; }
-    .top5 .psteps { font-size:.8rem; font-weight:bold; color:#1b5e20; }
+    .info .nm { color:#1b5e20; font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .info .meta { color:#5f8a64; font-size:.76rem; }
+    .total2 { color:#1b5e20; font-weight:700; font-size:1rem; white-space:nowrap; text-align:right; }
+    .total2 span { font-size:.7rem; color:#6b9270; font-weight:400; display:block; }
+
+    .msg { text-align:center; color:#1b5e20; font-weight:600; padding:34px 10px; line-height:1.6; }
+    .back { width:100%; padding:13px; margin-top:8px; border:1px solid rgba(67,160,71,.4);
+      color:#1b5e20; font-weight:600; font-family:'Sarabun',sans-serif; cursor:pointer;
+      background: rgba(255,255,255,.55); border-radius:18px; }
   </style>
 </head>
 <body>
-  <div class="wrap" id="app"><div class="msg">กำลังโหลด Leaderboard...</div></div>
+  <div class="wrap" id="app"><div class="glass msg">กำลังโหลด Leaderboard...</div></div>
 
   <script>
     /* ====== ใช้ค่าเดียวกับหน้าอื่น ====== */
     const LIFF_ID = "2010554592-DhNLOLm1";
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbx8npNr9IfY4hwrf3WUAUiYZT2TkE8Bwp5CJclYMRJNe9HbEg7NCPfnLQjlBQTev0ehTA/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwpgOdF1RxQOCpzFUCiAKklZACeGrdIUsFwUZS7zOq3JmBxAgNSPEpwNLJLho2VFyfu2A/exec";
     /* ==================================== */
 
     let accessToken = "", myUserId = "", data = null, tab = "individuals";
@@ -66,7 +115,7 @@
         });
         const text = await res.text();
         try { return JSON.parse(text); }
-        catch (e) { throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (ไม่ใช่ JSON)"); }
+        catch (e) { throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง: " + text.slice(0, 120)); }
       } catch (err) {
         if (err.name === "AbortError") throw new Error("หมดเวลาเชื่อมต่อ กรุณาลองใหม่อีกครั้ง");
         throw err;
@@ -84,56 +133,69 @@
         if (!data.ok) throw new Error(data.message || "โหลดไม่สำเร็จ");
         render();
       } catch (err) {
-        app.innerHTML = `<div class="msg" style="color:#c62828;">❌ ${err.message}</div>`;
+        app.innerHTML = `<div class="glass msg" style="color:#c62828;">❌ ${err.message}
+          <br><button class="back" style="margin-top:14px;" onclick="main()">ลองใหม่</button></div>`;
       }
     }
 
     function medal(i) { return i === 0 ? "g1" : i === 1 ? "g2" : i === 2 ? "g3" : ""; }
     function fmt(n) { return Number(n || 0).toLocaleString(); }
+    function medalIcon(i) { return i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : ""; }
 
-    function avatarOf(it) {
+    function avatarOf(it, sizeClass) {
       return it.picture
-        ? `<img class="avatar" src="${it.picture}">`
-        : `<div class="avatar" style="display:flex;align-items:center;justify-content:center;color:#2e7d32;font-weight:bold;">${(it.name||"?").charAt(0)}</div>`;
+        ? `<img class="${sizeClass}" src="${it.picture}">`
+        : `<div class="${sizeClass}" style="display:flex;align-items:center;justify-content:center;color:#2e7d32;font-weight:700;">${(it.name||"?").charAt(0)}</div>`;
+    }
+
+    function backBtn() {
+      return `<button class="back" onclick="location.href='https://liff.line.me/${LIFF_ID}'">← กลับหน้าส่งผล</button>`;
     }
 
     function render() {
       const app = document.getElementById("app");
       const meCard = `<div class="me">
-        <div class="rank">${data.me.rank > 0 ? "อันดับ " + data.me.rank : "ยังไม่มีอันดับ"}</div>
-        <div class="sub">${data.me.name} · รวม ${fmt(data.me.total)} ก้าว (เฉพาะที่อนุมัติแล้ว)</div></div>`;
+          <div class="rankNum">${data.me.rank > 0 ? "#" + data.me.rank : "—"}</div>
+          <div class="rankLbl">${data.me.rank > 0 ? "อันดับของคุณ" : "ยังไม่มีอันดับ (ต้องมีผลที่อนุมัติก่อน)"}</div>
+          <div class="name">${data.me.name}</div>
+          <div class="total">รวม ${fmt(data.me.total)} ก้าว (เฉพาะที่อนุมัติแล้ว)</div>
+        </div>`;
 
       let top5 = "", list = "";
       if (tab === "individuals") {
         const arr = data.individuals || [];
         const top = arr.slice(0, 5);
-        // เรียงให้อันดับ 1 อยู่กลาง ดูเหมือนชาร์จ/โพเดียม: 3-1-2-4-5 ถ้ามีครบ 5, ไม่ครบก็เรียงตามจริง
+        // จัดให้อันดับ 1 อยู่กลางแบบโพเดียม: 3-1-2-4-5
         const order = top.length >= 3 ? [2, 0, 1, 3, 4].filter(i => i < top.length) : top.map((_, i) => i);
-        top5 = top.length ? `<div class="top5">${order.map(i => {
+        top5 = top.length ? `<div class="glass top5">${order.map(i => {
           const it = top[i];
-          return `<div class="slot r${i+1}">${avatarOf(it)}<div class="rankno">#${i+1}</div>
-            <div class="pname">${it.name}</div><div class="psteps">${fmt(it.total)}</div></div>`;
+          return `<div class="slot pos${i+1}">
+              <div class="avatarWrap">${avatarOf(it, "avatar")}<span class="medalIcon">${medalIcon(i)}</span></div>
+              <div class="rankno">#${i+1}</div>
+              <div class="pname">${it.name}</div><div class="psteps">${fmt(it.total)}</div>
+            </div>`;
         }).join("")}</div>` : "";
 
         list = arr.length ? arr.map((it, i) => `
-          <div class="row ${it.userId === myUserId ? "mine" : ""}">
+          <div class="glass row ${it.userId === myUserId ? "mine" : ""}">
             <div class="pos ${medal(i)}">${i + 1}</div>
-            ${avatarOf(it).replace('class="avatar"', 'class="avatar" style="width:34px;height:34px;border-width:1px;"')}
-            <div class="info"><div class="nm">${it.name}</div><div class="meta">${it.days} วันที่อนุมัติ</div></div>
-            <div class="total">${fmt(it.total)} <span>ก้าว</span></div>
-          </div>`).join("") : `<div class="msg">ยังไม่มีผลที่อนุมัติ</div>`;
+            ${avatarOf(it, "rowAvatar")}
+            <div class="info"><div class="nm">${it.name}${it.userId === myUserId ? " (คุณ)" : ""}</div>
+              <div class="meta">${it.days} วันที่อนุมัติ</div></div>
+            <div class="total2">${fmt(it.total)}<span>ก้าว</span></div>
+          </div>`).join("") : `<div class="glass msg">ยังไม่มีผลที่อนุมัติ</div>`;
       } else {
         const arr = data.teams || [];
         list = arr.length ? arr.map((it, i) => `
-          <div class="row">
+          <div class="glass row">
             <div class="pos ${medal(i)}">${i + 1}</div>
             <div class="info"><div class="nm">${it.place}</div><div class="meta">${it.members} คน</div></div>
-            <div class="total">${fmt(it.total)} <span>ก้าว</span></div>
-          </div>`).join("") : `<div class="msg">ยังไม่มีผลที่อนุมัติ</div>`;
+            <div class="total2">${fmt(it.total)}<span>ก้าว</span></div>
+          </div>`).join("") : `<div class="glass msg">ยังไม่มีผลที่อนุมัติ</div>`;
       }
 
       app.innerHTML = `
-        <div class="head"><h2>🏆 Leaderboard</h2></div>
+        <div class="glass head"><h2>🏆 Leaderboard</h2><div class="sub">ก้าวท้าใจ สสอ.บ้านนา</div></div>
         ${meCard}
         <div class="tabs">
           <button class="tab ${tab === "individuals" ? "active" : ""}" onclick="switchTab('individuals')">รายบุคคล</button>
@@ -141,7 +203,7 @@
         </div>
         ${top5}
         ${list}
-        <button class="back" onclick="location.href='./index.html'">← กลับหน้าส่งผล</button>`;
+        ${backBtn()}`;
     }
 
     function switchTab(t) { tab = t; render(); }
