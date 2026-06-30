@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Leaderboard — ก้าวท้าใจ สสอ.บ้านนา</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; padding:0 0 40px; font-family:'Sarabun',sans-serif;
+      background:linear-gradient(135deg,#e8f5e9 0%,#81c784 100%); min-height:100vh; }
+    .wrap { width:95%; max-width:440px; margin:0 auto; padding-top:18px; }
+    .head { background:rgba(255,255,255,.55); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,.6);
+      border-radius:16px; padding:16px; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,.08); margin-bottom:14px; }
+    .head h2 { color:#1b5e20; margin:0; font-size:1.3rem; }
+    .me { background:linear-gradient(135deg,#66bb6a,#43a047); color:#fff; border-radius:16px; padding:14px;
+      text-align:center; margin-bottom:14px; box-shadow:0 6px 18px rgba(76,175,80,.3); }
+    .me .rank { font-size:1.8rem; font-weight:bold; } .me .sub { font-size:.85rem; opacity:.95; }
+    .tabs { display:flex; gap:8px; margin-bottom:14px; }
+    .tab { flex:1; padding:10px; border-radius:12px; border:1px solid #81c784; background:rgba(255,255,255,.5);
+      color:#1b5e20; font-weight:600; font-family:'Sarabun',sans-serif; cursor:pointer; font-size:.95rem; }
+    .tab.active { background:linear-gradient(135deg,#66bb6a,#43a047); color:#fff; border-color:transparent; }
+    .row { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.6); backdrop-filter:blur(10px);
+      border:1px solid rgba(255,255,255,.7); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+    .row.mine { outline:2px solid #43a047; }
+    .pos { width:34px; height:34px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-weight:bold; background:#e8f5e9; color:#2e7d32; }
+    .pos.g1 { background:#ffd54f; color:#7a5c00; } .pos.g2 { background:#cfd8dc; color:#37474f; } .pos.g3 { background:#ffcc80; color:#7a4a00; }
+    .info { flex:1; min-width:0; }
+    .info .nm { color:#1b5e20; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .info .meta { color:#777; font-size:.8rem; }
+    .total { color:#2e7d32; font-weight:bold; font-size:1.05rem; white-space:nowrap; }
+    .total span { font-size:.75rem; color:#888; font-weight:400; }
+    .msg { text-align:center; color:#1b5e20; font-weight:bold; padding:30px 10px; line-height:1.6; }
+    .back { width:100%; background:rgba(255,255,255,.6); color:#1b5e20; border:1px solid #81c784;
+      padding:12px; border-radius:12px; font-weight:600; font-family:'Sarabun',sans-serif; cursor:pointer; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="app"><div class="msg">กำลังโหลด Leaderboard...</div></div>
+
+  <script>
+    /* ====== ใช้ค่าเดียวกับหน้าอื่น ====== */
+    const LIFF_ID = "2010554592-DhNLOLm1";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyNwQPmD3OUr00NEmYBfRnPQNr2GxMD0gXN3sQcIDIEPOcB303YmdnTOgj5Mxspy6hBkg/exec";
+    /* ==================================== */
+
+    let accessToken = "", myUserId = "", data = null, tab = "individuals";
+
+    async function api(action) {
+      const res = await fetch(GAS_URL, {
+        method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action, accessToken }), redirect: "follow"
+      });
+      return res.json();
+    }
+
+    async function main() {
+      const app = document.getElementById("app");
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) { liff.login(); return; }
+        const p = await liff.getProfile(); myUserId = p.userId;
+        accessToken = liff.getAccessToken();
+        data = await api("leaderboard");
+        if (!data.ok) throw new Error(data.message || "โหลดไม่สำเร็จ");
+        render();
+      } catch (err) {
+        app.innerHTML = `<div class="msg" style="color:#c62828;">❌ ${err.message}</div>`;
+      }
+    }
+
+    function medal(i) { return i === 0 ? "g1" : i === 1 ? "g2" : i === 2 ? "g3" : ""; }
+    function fmt(n) { return Number(n || 0).toLocaleString(); }
+
+    function render() {
+      const app = document.getElementById("app");
+      const meCard = `<div class="me">
+        <div class="rank">${data.me.rank > 0 ? "อันดับ " + data.me.rank : "ยังไม่มีอันดับ"}</div>
+        <div class="sub">${data.me.name} · รวม ${fmt(data.me.total)} ก้าว (เฉพาะที่อนุมัติแล้ว)</div></div>`;
+
+      let list = "";
+      if (tab === "individuals") {
+        const arr = data.individuals || [];
+        list = arr.length ? arr.map((it, i) => `
+          <div class="row ${it.userId === myUserId ? "mine" : ""}">
+            <div class="pos ${medal(i)}">${i + 1}</div>
+            <div class="info"><div class="nm">${it.name}</div><div class="meta">${it.days} วันที่อนุมัติ</div></div>
+            <div class="total">${fmt(it.total)} <span>ก้าว</span></div>
+          </div>`).join("") : `<div class="msg">ยังไม่มีผลที่อนุมัติ</div>`;
+      } else {
+        const arr = data.teams || [];
+        list = arr.length ? arr.map((it, i) => `
+          <div class="row">
+            <div class="pos ${medal(i)}">${i + 1}</div>
+            <div class="info"><div class="nm">${it.place}</div><div class="meta">${it.members} คน</div></div>
+            <div class="total">${fmt(it.total)} <span>ก้าว</span></div>
+          </div>`).join("") : `<div class="msg">ยังไม่มีผลที่อนุมัติ</div>`;
+      }
+
+      app.innerHTML = `
+        <div class="head"><h2>🏆 Leaderboard</h2></div>
+        ${meCard}
+        <div class="tabs">
+          <button class="tab ${tab === "individuals" ? "active" : ""}" onclick="switchTab('individuals')">รายบุคคล</button>
+          <button class="tab ${tab === "teams" ? "active" : ""}" onclick="switchTab('teams')">หน่วยงาน</button>
+        </div>
+        ${list}
+        <button class="back" onclick="location.href='./index.html'">← กลับหน้าส่งผล</button>`;
+    }
+
+    function switchTab(t) { tab = t; render(); }
+    window.onload = main;
+  </script>
+</body>
+</html>
