@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ลงทะเบียน ก้าวท้าใจ สสอ.บ้านนา</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0; padding: 0; font-family: 'Sarabun', sans-serif;
+      background: linear-gradient(135deg, #e8f5e9 0%, #81c784 100%);
+      min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+      padding-bottom: 40px;
+    }
+    .container { width: 95%; max-width: 400px; margin: 20px auto; }
+    .banner {
+      width: 100%; height: auto; border-radius: 20px 20px 0 0; display: block;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 0 0 20px 20px;
+      padding: 30px 20px 20px 20px; text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    .profile-img {
+      width: 80px; height: 80px; border-radius: 50%; border: 3px solid #fff;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin-top: -50px;
+      background: #fff; object-fit: cover;
+    }
+    h3 { color: #1b5e20; margin: 10px 0 5px 0; font-size: 1.3rem; font-weight: 600; }
+    .status-text { color: #2e7d32; font-size: 0.9rem; margin-bottom: 15px; }
+    .form-group { text-align: left; margin-bottom: 15px; }
+    label { display: block; color: #1b5e20; font-weight: 600; font-size: 0.9rem; margin-bottom: 5px; margin-left: 5px; }
+    input, select {
+      width: 100%; box-sizing: border-box; padding: 12px 15px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.6);
+      color: #333; font-family: 'Sarabun', sans-serif; font-size: 1rem; outline: none;
+      transition: all 0.3s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    input:focus, select:focus {
+      background: rgba(255, 255, 255, 0.9); border-color: #81c784; box-shadow: 0 0 8px rgba(129, 199, 132, 0.4);
+    }
+    input:disabled { background: rgba(232, 245, 233, 0.6); color: #2e7d32; font-weight: bold; }
+    .row-flex { display: flex; gap: 10px; }
+    .row-flex .form-group { flex: 1; }
+    .btn-submit {
+      width: 100%; background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+      border: none; color: #fff; padding: 14px; border-radius: 12px; font-size: 1.1rem;
+      font-weight: bold; font-family: 'Sarabun', sans-serif; cursor: pointer; margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3); transition: all 0.3s ease;
+    }
+    .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4); }
+    .btn-submit:disabled { background: #a5d6a7; cursor: not-allowed; transform: none; }
+    #loading { text-align: center; font-size: 1rem; color: #1b5e20; line-height: 1.6; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <img src="https://drive.google.com/thumbnail?id=1zxwAt7-unumDFue3Lq4RavQ73N66p0j6&sz=w1000" alt="Banner ก้าวท้าใจ" class="banner">
+
+    <div class="glass-card" id="cardContent">
+      <div id="loading">
+        กำลังโหลดข้อมูลจาก LINE...<br>
+        <span style="font-size: 0.8rem; color: #666;">(รอสักครู่)</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ====== ตั้งค่า 2 จุดนี้ ======
+    const LIFF_ID = "2010554592-DhNLOLm1";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbyNwQPmD3OUr00NEmYBfRnPQNr2GxMD0gXN3sQcIDIEPOcB303YmdnTOgj5Mxspy6hBkg/exec";
+    // ==============================
+
+    let lineProfile = null;
+
+    async function main() {
+      const logBox = document.getElementById("loading");
+      try {
+        // ตอนนี้หน้าเว็บอยู่บนสุด (ไม่ใช่ใน iframe ของ GAS) liff.init จึงทำงานได้ปกติ
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login();
+          return;
+        }
+
+        lineProfile = await liff.getProfile();
+        renderForm();
+      } catch (err) {
+        logBox.innerHTML = `
+          <div style="background: #ffebee; border: 1px solid #c62828; color: #c62828; padding: 15px; border-radius: 8px;">
+            ❌ <b>เกิดข้อผิดพลาด</b><br>
+            <span style="font-size: 0.9rem;">${err.message}</span>
+          </div>
+        `;
+      }
+    }
+
+    function renderForm() {
+      const html = `
+        <img src="${lineProfile.pictureUrl}" class="profile-img">
+        <h3>ก้าวท้าใจ สสอ.บ้านนา</h3>
+        <p class="status-text">สวัสดีคุณ <strong>${lineProfile.displayName}</strong><br>กรุณากรอกข้อมูลเพื่อลงทะเบียน</p>
+
+        <form id="regForm">
+          <div class="row-flex">
+            <div class="form-group">
+              <label>น้ำหนัก (กก.)</label>
+              <input type="number" id="weight" step="0.1" required oninput="calculateBMI()">
+            </div>
+            <div class="form-group">
+              <label>ส่วนสูง (ซม.)</label>
+              <input type="number" id="height" required oninput="calculateBMI()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>BMI (ดัชนีมวลกาย)</label>
+            <input type="text" id="bmi" placeholder="คำนวณอัตโนมัติ" disabled>
+          </div>
+
+          <div class="form-group">
+            <label>สถานที่ทำงาน</label>
+            <select id="workplace" required>
+              <option value="" disabled selected>-- เลือกหน่วยงาน --</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านบางอ้อ">รพ.สต. บ้านบางอ้อ</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านละว้า">รพ.สต. บ้านละว้า</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านหนองรี">รพ.สต. บ้านหนองรี</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านแหลมไม้ย้อย">รพ.สต. บ้านแหลมไม้ย้อย</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านหนองคันจาม">รพ.สต. บ้านหนองคันจาม</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านพริก">รพ.สต. บ้านพริก</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านทองหลาง">รพ.สต. บ้านทองหลาง</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านไผ่ขวาง">รพ.สต. บ้านไผ่ขวาง</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านกร่างประตูวัง">รพ.สต. บ้านกร่างประตูวัง</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านคลองสามสิบ">รพ.สต. บ้านคลองสามสิบ</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านกะเหรี่ยง">รพ.สต. บ้านกะเหรี่ยง</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านเขาน้อย">รพ.สต. บ้านเขาน้อย</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านเขาเพิ่ม">รพ.สต. บ้านเขาเพิ่ม</option>
+              <option value="โรงพยาบาลส่งเสริมสุขภาพตำบล บ้านทางกระบือ">รพ.สต. บ้านทางกระบือ</option>
+              <option value="สาธารณสุขอำเภอบ้านนา">สาธารณสุขอำเภอบ้านนา (สสอ.)</option>
+            </select>
+          </div>
+
+          <button type="submit" id="btnSubmit" class="btn-submit">ยืนยันการลงทะเบียน</button>
+        </form>
+      `;
+
+      document.getElementById("cardContent").innerHTML = html;
+      document.getElementById("regForm").addEventListener("submit", submitData);
+    }
+
+    function calculateBMI() {
+      const w = parseFloat(document.getElementById("weight").value);
+      const h = parseFloat(document.getElementById("height").value);
+      const bmiInput = document.getElementById("bmi");
+      if (w > 0 && h > 0) {
+        const hMeter = h / 100;
+        bmiInput.value = (w / (hMeter * hMeter)).toFixed(2);
+      } else {
+        bmiInput.value = "";
+      }
+    }
+
+    async function submitData(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btnSubmit");
+      btn.disabled = true;
+      btn.innerText = "กำลังบันทึกข้อมูล...";
+
+      const payload = {
+        userId: lineProfile.userId,
+        displayName: lineProfile.displayName,
+        pictureUrl: lineProfile.pictureUrl,
+        weight: document.getElementById("weight").value,
+        height: document.getElementById("height").value,
+        bmi: document.getElementById("bmi").value,
+        workplace: document.getElementById("workplace").value
+      };
+
+      try {
+        // ใช้ Content-Type เป็น text/plain เพื่อเลี่ยง CORS preflight ของ GAS
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload),
+          redirect: "follow"
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.message);
+
+        document.getElementById("cardContent").innerHTML = `
+          <img src="${lineProfile.pictureUrl}" class="profile-img">
+          <h3>ก้าวท้าใจ สสอ.บ้านนา</h3>
+          <div style="padding: 20px 0;">
+            <p style="color: #2e7d32; font-weight: bold; font-size: 1.1rem;">${data.message}</p>
+          </div>
+          <button class="btn-submit" onclick="liff.closeWindow()">กลับสู่หน้าแชท</button>
+        `;
+      } catch (err) {
+        alert("บันทึกไม่สำเร็จ: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "ยืนยันการลงทะเบียน";
+      }
+    }
+
+    window.onload = main;
+  </script>
+</body>
+</html>
