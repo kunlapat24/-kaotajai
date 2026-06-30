@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ประวัติของฉัน — ก้าวท้าใจ สสอ.บ้านนา</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing:border-box; }
+    body { margin:0; padding:0 0 50px; font-family:'Sarabun',sans-serif;
+      background: radial-gradient(circle at 20% 0%, #c8f5cf 0%, #e8f5e9 35%, #ffffff 100%);
+      min-height:100vh; color:#1b3a1f; }
+    .wrap { width:94%; max-width:440px; margin:0 auto; padding-top:18px; }
+    .glass { background: rgba(255,255,255,.55); backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%); border:1px solid rgba(255,255,255,.9);
+      box-shadow: 0 8px 28px rgba(46,125,50,.10), inset 0 1px 0 rgba(255,255,255,.6); border-radius:22px; }
+    .head { text-align:center; padding:18px 16px; margin-bottom:14px; }
+    .head h2 { margin:0; font-size:1.3rem; font-weight:700; color:#1b5e20; }
+    .nav { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; margin-bottom:14px; }
+    .navbtn { background:rgba(255,255,255,.6); border:1px solid rgba(67,160,71,.35); color:#1b5e20;
+      font-weight:700; font-size:1rem; border-radius:12px; padding:8px 14px; cursor:pointer; font-family:'Sarabun',sans-serif; }
+    .navbtn:disabled { opacity:.35; cursor:not-allowed; }
+    .monthLabel { font-weight:700; color:#1b5e20; font-size:1rem; }
+    .summary { display:flex; gap:10px; margin-bottom:14px; }
+    .summary .item { flex:1; text-align:center; padding:12px 6px; }
+    .summary .num { font-size:1.3rem; font-weight:700; color:#1b5e20; }
+    .summary .lbl { font-size:.72rem; color:#3a7d44; }
+    .cal { padding:14px; }
+    .cal .dow { display:grid; grid-template-columns:repeat(7,1fr); text-align:center; margin-bottom:6px; }
+    .cal .dow span { font-size:.72rem; color:#5f8a64; font-weight:600; }
+    .cal .grid { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+    .cal .cell { aspect-ratio:1; border-radius:10px; display:flex; flex-direction:column; align-items:center;
+      justify-content:center; font-size:.72rem; position:relative; cursor:default; }
+    .cal .cell.empty { background:transparent; }
+    .cal .cell.none { background:rgba(0,0,0,.03); color:#aaa; }
+    .cal .cell.pending { background:#fff8e1; color:#f57f17; border:1px solid #ffe082; }
+    .cal .cell.ok { background:#e8f5e9; color:#1b5e20; border:1px solid #a5d6a7; font-weight:700; }
+    .cal .cell.no { background:#ffebee; color:#c62828; border:1px solid #ef9a9a; }
+    .cal .cell .dnum { font-weight:700; }
+    .cal .cell .steps { font-size:.6rem; }
+    .legend { display:flex; gap:14px; justify-content:center; padding:10px 0 4px; flex-wrap:wrap; }
+    .legend .lg { display:flex; align-items:center; gap:5px; font-size:.74rem; color:#3a7d44; }
+    .legend .dot { width:11px; height:11px; border-radius:3px; }
+    .msg { text-align:center; color:#1b5e20; font-weight:600; padding:34px 10px; line-height:1.6; }
+    .back { width:100%; padding:13px; margin-top:14px; border:1px solid rgba(67,160,71,.4);
+      color:#1b5e20; font-weight:600; font-family:'Sarabun',sans-serif; cursor:pointer;
+      background: rgba(255,255,255,.55); border-radius:18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="app"><div class="glass msg">กำลังโหลดประวัติ...</div></div>
+
+  <script>
+    const LIFF_ID = "2010554592-DhNLOLm1";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwpgOdF1RxQOCpzFUCiAKklZACeGrdIUsFwUZS7zOq3JmBxAgNSPEpwNLJLho2VFyfu2A/exec";
+
+    let accessToken = "", curMonth = "";
+
+    async function api(action, payload, _isRetry) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), _isRetry ? 25000 : 12000);
+      try {
+        const res = await fetch(GAS_URL, {
+          method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(Object.assign({ action, accessToken }, payload || {})),
+          redirect: "follow", signal: ctrl.signal
+        });
+        const text = await res.text();
+        try { return JSON.parse(text); }
+        catch (e) { throw new Error("เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (ไม่ใช่ JSON)"); }
+      } catch (err) {
+        if (err.name === "AbortError" && !_isRetry) return api(action, payload, true);
+        if (err.name === "AbortError") throw new Error("เซิร์ฟเวอร์ตอบช้าผิดปกติ กรุณาลองใหม่อีกครั้งใน 1 นาที");
+        throw err;
+      } finally { clearTimeout(timer); }
+    }
+
+    function todayYM() {
+      const d = new Date();
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    }
+    function shiftMonth(ym, delta) {
+      const [y, m] = ym.split("-").map(Number);
+      const d = new Date(y, m - 1 + delta, 1);
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    }
+    function monthLabelTH(ym) {
+      const TH = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+      const [y, m] = ym.split("-").map(Number);
+      return TH[m - 1] + " " + (y + 543);
+    }
+
+    async function main() {
+      const app = document.getElementById("app");
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) { liff.login(); return; }
+        accessToken = liff.getAccessToken();
+        curMonth = todayYM();
+        await load();
+      } catch (err) {
+        app.innerHTML = `<div class="glass msg" style="color:#c62828;">❌ ${err.message}
+          <br><button class="back" onclick="main()">ลองใหม่</button></div>`;
+      }
+    }
+
+    async function load() {
+      const app = document.getElementById("app");
+      app.innerHTML = `<div class="glass msg">กำลังโหลด ${monthLabelTH(curMonth)}...</div>`;
+      try {
+        const r = await api("getHistory", { month: curMonth });
+        if (!r.ok) throw new Error(r.message || "โหลดไม่สำเร็จ");
+        render(r);
+      } catch (err) {
+        app.innerHTML = `<div class="glass msg" style="color:#c62828;">❌ ${err.message}</div>`;
+      }
+    }
+
+    function render(data) {
+      const app = document.getElementById("app");
+      const byDate = {};
+      (data.days || []).forEach(d => { byDate[d.date] = d; });
+
+      const [y, m] = curMonth.split("-").map(Number);
+      const firstDow = new Date(y, m - 1, 1).getDay(); // 0=อา
+      const daysInMonth = new Date(y, m, 0).getDate();
+      const isCurrentMonth = curMonth === todayYM();
+      const todayDate = new Date().getDate();
+
+      let approved = 0, totalSteps = 0;
+      let cells = "";
+      for (let i = 0; i < firstDow; i++) cells += `<div class="cell empty"></div>`;
+      for (let day = 1; day <= daysInMonth; day++) {
+        const ds = curMonth + "-" + String(day).padStart(2, "0");
+        const rec = byDate[ds];
+        let cls = "none", inner = `<div class="dnum">${day}</div>`;
+        if (rec) {
+          if (rec.status === "อนุมัติ") { cls = "ok"; approved++; totalSteps += Number(rec.steps) || 0; }
+          else if (rec.status === "รออนุมัติ") cls = "pending";
+          else if (rec.status === "ไม่อนุมัติ") cls = "no";
+          inner = `<div class="dnum">${day}</div><div class="steps">${Number(rec.steps).toLocaleString()}</div>`;
+        }
+        if (isCurrentMonth && day === todayDate) cls += "";
+        cells += `<div class="cell ${cls}">${inner}</div>`;
+      }
+
+      const nextDisabled = curMonth >= todayYM() ? "disabled" : "";
+
+      app.innerHTML = `
+        <div class="glass head"><h2>📅 ประวัติของฉัน</h2></div>
+        <div class="glass nav">
+          <button class="navbtn" onclick="changeMonth(-1)">←</button>
+          <span class="monthLabel">${monthLabelTH(curMonth)}</span>
+          <button class="navbtn" ${nextDisabled} onclick="changeMonth(1)">→</button>
+        </div>
+        <div class="glass summary">
+          <div class="item"><div class="num">${approved}</div><div class="lbl">วันที่อนุมัติ</div></div>
+          <div class="item"><div class="num">${totalSteps.toLocaleString()}</div><div class="lbl">ก้าวรวม (อนุมัติ)</div></div>
+        </div>
+        <div class="glass cal">
+          <div class="dow"><span>อา</span><span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span></div>
+          <div class="grid">${cells}</div>
+          <div class="legend">
+            <div class="lg"><span class="dot" style="background:#e8f5e9;border:1px solid #a5d6a7;"></span>อนุมัติ</div>
+            <div class="lg"><span class="dot" style="background:#fff8e1;border:1px solid #ffe082;"></span>รออนุมัติ</div>
+            <div class="lg"><span class="dot" style="background:#ffebee;border:1px solid #ef9a9a;"></span>ไม่อนุมัติ</div>
+          </div>
+        </div>
+        <button class="back" onclick="location.href='https://liff.line.me/${LIFF_ID}'">← กลับหน้าส่งผล</button>`;
+    }
+
+    function changeMonth(delta) { curMonth = shiftMonth(curMonth, delta); load(); }
+    window.onload = main;
+  </script>
+</body>
+</html>
